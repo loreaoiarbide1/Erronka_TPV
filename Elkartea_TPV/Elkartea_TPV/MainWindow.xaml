@@ -1,0 +1,69 @@
+﻿<Window x:Class="Elkartea_TPV.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Elkartea TPV"
+        Height="500"
+        Width="850"
+        WindowStartupLocation="CenterScreen"
+        Background="#F2F2F2">
+
+    <Grid Margin="25">
+        <StackPanel>
+
+            <TextBlock Text="ELKARTEA TPV"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#34495E"
+                       HorizontalAlignment="Center"
+                       Margin="0,10,0,10"/>
+
+            <TextBlock x:Name="txtOngietorria"
+                       FontSize="18"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,30"/>
+
+            <!-- Administratzailearen aukerak -->
+            <StackPanel x:Name="panelAdministratzailea"
+                        Visibility="Collapsed">
+
+                <TextBlock Text="Administratzailearen menua"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Margin="0,0,0,20"/>
+
+                <Button Content="Erabiltzaileak kudeatu"
+                        Height="45"
+                        Margin="0,5"
+                        Click="BtnErabiltzaileak_Click"/>
+
+                <Button Content="Stocka kudeatu"
+                        Height="45"
+                        Margin="0,5"
+                        Click="BtnStocka_Click"/>
+
+            </StackPanel>
+
+            <!-- Erabiltzaile arruntaren aukerak -->
+            <StackPanel x:Name="panelErabiltzailea"
+                        Visibility="Collapsed">
+
+                <TextBlock Text="Erabiltzailearen menua"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Margin="0,0,0,20"/>
+
+                <Button Content="Kontsumoak"
+                        Height="45"
+                        Margin="0,5"
+                        Click="BtnKontsumoak_Click"/>
+
+                <Button Content="Erreserbak"
+                        Height="45"
+                        Margin="0,5"
+                        Click="BtnErreserbak_Click"/>
+
+            </StackPanel>
+
+        </StackPanel>
+    </Grid>
+</Window>

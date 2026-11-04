@@ -1,0 +1,135 @@
+﻿<Window x:Class="Elkartea_TPV.ErabiltzaileakWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kudeatu erabiltzaileak"
+        Height="600"
+        Width="850"
+        WindowStartupLocation="CenterScreen"
+        Background="#F2F2F2">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="ERABILTZAILEEN KUDEAKETA"
+                   FontSize="25"
+                   FontWeight="Bold"
+                   Foreground="#34495E"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,20"/>
+
+        <Border Grid.Row="1"
+                Background="White"
+                CornerRadius="8"
+                Padding="15"
+                Margin="0,0,0,15">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="5">
+                    <TextBlock Text="Erabiltzaile izena"/>
+                    <TextBox x:Name="txtIzena"
+                             Height="30"
+                             Margin="0,5,10,10"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="5">
+                    <TextBlock Text="Pasahitza"/>
+                    <PasswordBox x:Name="txtPasahitza"
+                                 Height="30"
+                                 Margin="0,5,0,10"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="5">
+                    <TextBlock Text="Erabiltzaile mota"/>
+                    <ComboBox x:Name="cmbMota"
+                              Height="30"
+                              Margin="0,5,10,0">
+                        <ComboBoxItem Content="Erabiltzailea"/>
+                        <ComboBoxItem Content="Administratzailea"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <TextBlock Grid.Row="1"
+                           Grid.Column="1"
+                           Text="Aukeratu erabiltzaile bat zerrendan aldatzeko edo ezabatzeko."
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"
+                           Foreground="Gray"
+                           Margin="10"/>
+
+            </Grid>
+        </Border>
+
+        <DataGrid x:Name="dgvErabiltzaileak"
+                  Grid.Row="2"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  SelectionChanged="DgvErabiltzaileak_SelectionChanged"
+                  CanUserAddRows="False"
+                  Margin="0,0,0,15">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID"
+                                    Binding="{Binding Id}"
+                                    Width="70"/>
+
+                <DataGridTextColumn Header="Erabiltzailea"
+                                    Binding="{Binding ErabiltzaileIzena}"
+                                    Width="*"/>
+
+                <DataGridTextColumn Header="Mota"
+                                    Binding="{Binding Mota}"
+                                    Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="3"
+            Orientation="Horizontal"
+            HorizontalAlignment="Center">
+
+            <Button Content="Atzera"
+            Width="110"
+            Height="38"
+            Margin="5"
+            Click="BtnAtzera_Click"/>
+
+            <Button Content="Berria"
+            Width="110"
+            Height="38"
+            Margin="5"
+            Click="BtnBerria_Click"/>
+
+            <Button Content="Gorde"
+            Width="110"
+            Height="38"
+            Margin="5"
+            Background="#34495E"
+            Foreground="White"
+            Click="BtnGorde_Click"/>
+
+            <Button Content="Ezabatu"
+            Width="110"
+            Height="38"
+            Margin="5"
+            Background="#C0392B"
+            Foreground="White"
+            Click="BtnEzabatu_Click"/>
+
+        </StackPanel>
+    </Grid>
+</Window>
