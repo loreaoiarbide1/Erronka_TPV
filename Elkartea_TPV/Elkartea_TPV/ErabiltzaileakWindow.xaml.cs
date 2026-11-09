@@ -21,7 +21,7 @@ namespace Elkartea_TPV
         // Erabiltzaile guztiak zerrendan erakutsi
         private void KargatuErabiltzaileak()
         {
-            dgvErabiltzaileak.ItemsSource =
+            dgErabiltzaileak.ItemsSource =
                 _datuBasea.LortuErabiltzaileak();
         }
 
@@ -32,26 +32,26 @@ namespace Elkartea_TPV
 
             txtIzena.Clear();
             txtPasahitza.Clear();
-            cmbMota.SelectedIndex = -1;
+            cmbErabiltzaileMota.SelectedIndex = -1;
 
-            dgvErabiltzaileak.SelectedItem = null;
+            dgErabiltzaileak.SelectedItem = null;
         }
 
         // Erabiltzaile berria gorde edo aukeratutakoa aldatu
         private void BtnGorde_Click(object sender, RoutedEventArgs e)
         {
-            string izena = txtIzena.Text.Trim();
-            string pasahitza = txtPasahitza.Password;
+            string izena        = txtIzena.Text.Trim();
+            string pasahitza    = txtPasahitza.Password;
 
             if (string.IsNullOrWhiteSpace(izena) ||
                 string.IsNullOrWhiteSpace(pasahitza) ||
-                cmbMota.SelectedItem == null)
+                cmbErabiltzaileMota.SelectedItem == null)
             {
                 MessageBox.Show("Bete eremu guztiak.");
                 return;
             }
 
-            string mota = ((ComboBoxItem)cmbMota.SelectedItem).Content.ToString()!;
+            string mota = ((ComboBoxItem)cmbErabiltzaileMota.SelectedItem).Content.ToString()!;
 
             try
             {
@@ -85,24 +85,24 @@ namespace Elkartea_TPV
         }
 
         // Zerrendan erabiltzaile bat aukeratzean bere datuak kargatu
-        private void DgvErabiltzaileak_SelectionChanged(
+        private void DgErabiltzaileak_SelectionChanged(
             object sender, SelectionChangedEventArgs e)
         {
-            if (dgvErabiltzaileak.SelectedItem is Erabiltzaileak erabiltzailea)
+            if (dgErabiltzaileak.SelectedItem is Erabiltzaileak erabiltzailea)
             {
                 _aukeratutakoId = erabiltzailea.Id;
 
-                txtIzena.Text = erabiltzailea.ErabiltzaileIzena;
+                txtIzena.Text   = erabiltzailea.ErabiltzaileIzena;
 
                 // Pasahitza ez dugu zerrendan erakusten.
                 // Aldatzeko, pasahitz berria idatzi behar da.
                 txtPasahitza.Clear();
 
-                foreach (ComboBoxItem item in cmbMota.Items)
+                foreach (ComboBoxItem item in cmbErabiltzaileMota.Items)
                 {
                     if (item.Content.ToString() == erabiltzailea.Mota)
                     {
-                        cmbMota.SelectedItem = item;
+                        cmbErabiltzaileMota.SelectedItem = item;
                         break;
                     }
                 }
@@ -120,7 +120,7 @@ namespace Elkartea_TPV
 
             MessageBoxResult erantzuna = MessageBox.Show(
                 "Ziur zaude erabiltzaile hau ezabatu nahi duzula?",
-                "Erabiltzailea ezabatu",
+                "Erabiltzailea ezabatuta",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 

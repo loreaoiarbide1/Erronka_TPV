@@ -9,6 +9,44 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Irudiak\coca-cola.png" />
+    <None Remove="Irudiak\ebakia.png" />
+    <None Remove="Irudiak\garagardoa.png" />
+    <None Remove="Irudiak\kafesnia.png" />
+    <None Remove="Irudiak\kafe_deskafeinatua.png" />
+    <None Remove="Irudiak\kafe_hutsa.png" />
+    <None Remove="Irudiak\kas_naranja.png" />
+    <None Remove="Irudiak\ura.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Irudiak\coca-cola.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\ebakia.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\garagardoa.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\kafesnia.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\kafe_deskafeinatua.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\kafe_hutsa.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\kas_naranja.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Irudiak\ura.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.14" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
   </ItemGroup>

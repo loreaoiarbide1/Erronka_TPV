@@ -35,17 +35,20 @@ namespace Elkartea_TPV
 
         private void BtnStocka_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Stockaren kudeaketa");
+            BiltegiaWindow leihoa = new BiltegiaWindow();
+            leihoa.ShowDialog();
         }
 
         private void BtnKontsumoak_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Kontsumoen kudeaketa");
+            KontsumoakWindow leihoa = new KontsumoakWindow(_erabiltzailea);
+            leihoa.ShowDialog();
         }
 
         private void BtnErreserbak_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Erreserben kudeaketa");
+            ErreserbakWindow leihoa = new ErreserbakWindow();
+            leihoa.ShowDialog();
         }
     }
 }

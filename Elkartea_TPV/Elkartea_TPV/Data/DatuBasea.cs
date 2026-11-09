@@ -1,9 +1,7 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using Elkartea_TPV.Models;
-
-// SQLite-rekin lan egiteko behar diren klaseak inportatzen ditu
 using Microsoft.Data.Sqlite;
-// Fitxategi honetako kodea Elkartea_TPVri dagokion espazioan dago.
 namespace Elkartea_TPV;
 
 public class DatuBasea
@@ -27,8 +25,7 @@ public class DatuBasea
         konexioa.Open();
 
         using var komandoa = konexioa.CreateCommand();
-
-        // Eskaeran eskatutako taulak sortzen ditugu: Erabiltzaileak, Stocka, Erreserbak eta Kontsumoak/Ticketak.
+     
         komandoa.CommandText = """
 			-- 1. Erabiltzaileen taula (Administratzaileak eta Erabiltzaile komunak)
 			CREATE TABLE IF NOT EXISTS Erabiltzaileak (
@@ -99,8 +96,6 @@ public class DatuBasea
         komandoa.ExecuteNonQuery();
     }
 
-    // Behar dituzun gainerako metodoak (stocka aldatu, erreserbak kudeatu, etab.) 
-    // modu berean gehitu ditzakezu hemen.
 
     public List<Erabiltzaileak> LortuErabiltzaileak()
     {
@@ -323,6 +318,121 @@ public class DatuBasea
 
         komandoa.ExecuteNonQuery();
     }
+
+
+    public void EguneratuStocka(long id, string produktua, int kantitatea, double prezioa)
+    {
+        using var konexioa = new SqliteConnection(KonexioKatea);
+        konexioa.Open();
+
+        using var komandoa = konexioa.CreateCommand();
+
+        komandoa.CommandText = """
+        UPDATE Stocka
+        SET Produktua = $produktua,
+            Kantitatea = $kantitatea,
+            Prezioa = $prezioa
+        WHERE Id = $id;
+        """;
+
+        komandoa.Parameters.AddWithValue("$id", id);
+        komandoa.Parameters.AddWithValue("$produktua", produktua);
+        komandoa.Parameters.AddWithValue("$kantitatea", kantitatea);
+        komandoa.Parameters.AddWithValue("$prezioa", prezioa);
+
+        komandoa.ExecuteNonQuery();
+    }
+
+
+    // Kontsumoa gorde eta stockeko kantitateak eguneratzen ditu.
+    public void GordeKontsumoaEtaEguneratuStocka(
+        string erabiltzaileIzena,
+        IEnumerable<KontsumoLerroa> kontsumoak)
+    {
+        using var konexioa = new SqliteConnection(KonexioKatea);
+        konexioa.Open();
+
+        // Eragiketa guztiak batera egiten dira.
+        using var transakzioa = konexioa.BeginTransaction();
+
+        try
+        {
+            foreach (KontsumoLerroa lerroa in kontsumoak)
+            {
+                if (lerroa.Kantitatea <= 0)
+                {
+                    throw new InvalidOperationException(
+                        "Produktu baten kantitatea ez da zuzena.");
+                }
+
+                // Stockean nahikoa produktu dagoen egiaztatzen du.
+                using var stockKomandoa = konexioa.CreateCommand();
+
+                stockKomandoa.Transaction = transakzioa;
+
+                stockKomandoa.CommandText = """
+                    UPDATE Stocka
+                    SET Kantitatea = Kantitatea - $kantitatea
+                    WHERE Produktua = $produktua
+                    AND Kantitatea >= $kantitatea;
+                    """;
+
+                stockKomandoa.Parameters.AddWithValue(
+                    "$produktua", lerroa.Produktua);
+
+                stockKomandoa.Parameters.AddWithValue(
+                    "$kantitatea", lerroa.Kantitatea);
+
+                int eguneratutakoErrenkadak =
+                    stockKomandoa.ExecuteNonQuery();
+
+                if (eguneratutakoErrenkadak != 1)
+                {
+                    throw new InvalidOperationException(
+                        "Ez dago nahikoa stock produktu honentzat: " +
+                        lerroa.Produktua);
+                }
+
+                // Kontsumoa datu-basean gordetzen du.
+                using var kontsumoKomandoa = konexioa.CreateCommand();
+
+                kontsumoKomandoa.Transaction = transakzioa;
+
+                kontsumoKomandoa.CommandText = """
+                    INSERT INTO Kontsumoak
+                    (ErabiltzaileIzena, Produktua, Kantitatea, PrezioTotala)
+                    VALUES
+                    ($erabiltzaileIzena, $produktua, $kantitatea, $prezioa);
+                    """;
+
+                kontsumoKomandoa.Parameters.AddWithValue(
+                    "$erabiltzaileIzena", erabiltzaileIzena);
+
+                kontsumoKomandoa.Parameters.AddWithValue(
+                    "$produktua", lerroa.Produktua);
+
+                kontsumoKomandoa.Parameters.AddWithValue(
+                    "$kantitatea", lerroa.Kantitatea);
+
+                kontsumoKomandoa.Parameters.AddWithValue(
+                    "$prezioa", lerroa.Guztira);
+
+                kontsumoKomandoa.ExecuteNonQuery();
+            }
+
+            // Dena ondo badago, aldaketak gordetzen dira.
+            transakzioa.Commit();
+        }
+        catch
+        {
+            // Errore bat badago, aldaketa guztiak desegiten dira.
+            transakzioa.Rollback();
+
+            throw;
+        }
+    }
+
+
 
 
 }

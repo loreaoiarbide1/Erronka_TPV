@@ -1,0 +1,139 @@
+﻿<Window
+    x:Class="Elkartea_TPV.BiltegiaWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Stockaren kudeaketa"
+    Width="850"
+    Height="600"
+    Background="#F2F2F2"
+    WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Margin="0,0,0,20"
+            HorizontalAlignment="Center"
+            FontSize="25"
+            FontWeight="Bold"
+            Foreground="#34495E"
+            Text="STOCKAREN KUDEAKETA" />
+
+        <Border
+            Grid.Row="1"
+            Margin="0,0,0,15"
+            Padding="15"
+            Background="White"
+            CornerRadius="8">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="5">
+                    <TextBlock Text="Produktua" />
+                    <TextBox
+                        x:Name="txtProduktua"
+                        Height="32"
+                        Margin="0,5,10,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="5">
+                    <TextBlock Text="Kantitatea" />
+                    <TextBox
+                        x:Name="txtKantitatea"
+                        Height="32"
+                        Margin="0,5,10,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Margin="5">
+                    <TextBlock Text="Prezioa (€)" />
+                    <TextBox
+                        x:Name="txtPrezioa"
+                        Height="32"
+                        Margin="0,5,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <DataGrid
+            x:Name="dgStocka"
+            Grid.Row="2"
+            Margin="0,0,0,15"
+            AutoGenerateColumns="False"
+            CanUserAddRows="False"
+            IsReadOnly="True"
+            SelectionChanged="DgStocka_SelectionChanged"
+            SelectionMode="Single">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="70"
+                    Binding="{Binding Id}"
+                    Header="ID" />
+
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Produktua}"
+                    Header="Produktua" />
+
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Kantitatea}"
+                    Header="Kantitatea" />
+
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Prezioa, StringFormat=N2}"
+                    Header="Prezioa (€)" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel
+            Grid.Row="3"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+
+            <Button
+                Width="100"
+                Height="38"
+                Margin="5"
+                Click="BtnAtzera_Click"
+                Content="Atzera" />
+
+            <Button
+                Width="100"
+                Height="38"
+                Margin="5"
+                Click="BtnBerria_Click"
+                Content="Berria" />
+
+            <Button
+                Width="100"
+                Height="38"
+                Margin="5"
+                Background="#34495E"
+                Click="BtnGorde_Click"
+                Content="Gorde"
+                Foreground="White" />
+
+            <Button
+                Width="100"
+                Height="38"
+                Margin="5"
+                Background="#C0392B"
+                Click="BtnEzabatu_Click"
+                Content="Ezabatu"
+                Foreground="White" />
+
+        </StackPanel>
+    </Grid>
+</Window>
