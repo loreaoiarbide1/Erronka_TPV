@@ -66,16 +66,21 @@ public class DatuBasea
         komandoa.ExecuteNonQuery();
 
         // Hasierako administratzaile bat sortu adibide gisa (existitzen ez bada)
-        GeyiAdministratzaileLehenetsia(konexioa);
+        SortuHasierakoErabiltzaileak(konexioa);
     }
 
-    private void GeyiAdministratzaileLehenetsia(SqliteConnection konexioa)
+    private void SortuHasierakoErabiltzaileak(SqliteConnection konexioa)
     {
         using var komandoa = konexioa.CreateCommand();
+
         komandoa.CommandText = """
-			INSERT OR IGNORE INTO Erabiltzaileak (ErabiltzaileIzena, Pasahitza, Mota)
-			VALUES ('admin', 'admin123', 'Administratzailea');
-			""";
+        INSERT OR IGNORE INTO Erabiltzaileak
+        (ErabiltzaileIzena, Pasahitza, Mota)
+        VALUES
+        ('admin', 'admin123', 'Administratzailea'),
+        ('proba', '123456', 'Erabiltzailea');
+        """;
+
         komandoa.ExecuteNonQuery();
     }
 
@@ -200,21 +205,85 @@ public class DatuBasea
 
     }
 
-    public void GordeErreserba(int mahaiZenbakia, string data, string bazkariaAfaria, string erabiltzaileIzena)
+
+    public void GordeErreserba(
+        int mahaiZenbakia,
+        string data,
+        string bazkariaAfaria,
+        string erabiltzaileIzena)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
-        using var komandoa = konexioa.CreateCommand();
-        komandoa.CommandText = """
-            INSERT INTO Erreserbak (MahaiZenbakia, Data, BazkariaAfaria, ErabiltzaileIzena)
-            VALUES ($mahaiZenbakia, $data, $bazkariaAfaria, $erabiltzaileIzena);
+
+        using var transakzioa = konexioa.BeginTransaction();
+
+        try
+        {
+            // Mahaia data eta zerbitzu horretan libre dagoen egiaztatzen du.
+            using var egiaztatuKomandoa = konexioa.CreateCommand();
+
+            egiaztatuKomandoa.Transaction = transakzioa;
+
+            egiaztatuKomandoa.CommandText = """
+            SELECT COUNT(*)
+            FROM Erreserbak
+            WHERE MahaiZenbakia = $mahaia
+            AND Data = $data
+            AND BazkariaAfaria = $zerbitzua;
             """;
-        komandoa.Parameters.AddWithValue("$mahaiZenbakia", mahaiZenbakia);
-        komandoa.Parameters.AddWithValue("$data", data);
-        komandoa.Parameters.AddWithValue("$bazkariaAfaria", bazkariaAfaria);
-        komandoa.Parameters.AddWithValue("$erabiltzaileIzena", erabiltzaileIzena);
-        komandoa.ExecuteNonQuery();
+
+            egiaztatuKomandoa.Parameters.AddWithValue(
+                "$mahaia", mahaiZenbakia);
+
+            egiaztatuKomandoa.Parameters.AddWithValue(
+                "$data", data);
+
+            egiaztatuKomandoa.Parameters.AddWithValue(
+                "$zerbitzua", bazkariaAfaria);
+
+            long erreserbak = (long)egiaztatuKomandoa.ExecuteScalar()!;
+
+            if (erreserbak > 0)
+            {
+                throw new InvalidOperationException(
+                    "Mahai hau dagoeneko erreserbatuta dago data eta zerbitzu horretarako.");
+            }
+
+            // Erreserba datu-basean gordetzen du.
+            using var komandoa = konexioa.CreateCommand();
+
+            komandoa.Transaction = transakzioa;
+
+            komandoa.CommandText = """
+            INSERT INTO Erreserbak
+            (MahaiZenbakia, Data, BazkariaAfaria, ErabiltzaileIzena)
+            VALUES
+            ($mahaia, $data, $zerbitzua, $erabiltzailea);
+            """;
+
+            komandoa.Parameters.AddWithValue(
+                "$mahaia", mahaiZenbakia);
+
+            komandoa.Parameters.AddWithValue(
+                "$data", data);
+
+            komandoa.Parameters.AddWithValue(
+                "$zerbitzua", bazkariaAfaria);
+
+            komandoa.Parameters.AddWithValue(
+                "$erabiltzailea", erabiltzaileIzena);
+
+            komandoa.ExecuteNonQuery();
+
+            transakzioa.Commit();
+        }
+        catch
+        {
+            transakzioa.Rollback();
+            throw;
+        }
     }
+
 
     public void GordeKontsumoa(string erabiltzaileIzena, string produktua, int kantitatea, double prezioa)
     {
@@ -431,8 +500,4 @@ public class DatuBasea
             throw;
         }
     }
-
-
-
-
 }

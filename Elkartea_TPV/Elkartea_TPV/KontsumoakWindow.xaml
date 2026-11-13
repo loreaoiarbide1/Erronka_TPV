@@ -1,33 +1,78 @@
-﻿<Window x:Class="Elkartea_TPV.KontsumoakWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Kontsumoak"
-        Height="720"
-        Width="1150"
-        MinHeight="600"
-        MinWidth="950"
-        WindowStartupLocation="CenterScreen"
-        Background="#F2F3F5">
+﻿<Window
+    x:Class="Elkartea_TPV.KontsumoakWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Kontsumoak"
+    Width="1150"
+    Height="720"
+    MinWidth="950"
+    MinHeight="600"
+    Background="#F2F3F5"
+    WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
 
-        <Style x:Key="KategoriaBotoia" TargetType="Button">
-            <Setter Property="Background" Value="#263746"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="15,10"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
+        <!--  Estilo orokorra botoi guztientzat  -->
+        <Style x:Key="BotoiOrokorra" TargetType="Button">
+            <Setter Property="Background" Value="#263746" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="15,10" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="MinHeight" Value="40" />
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="BotoiErtza"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
+
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                RecognizesAccessKey="True" />
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BotoiErtza" Property="Opacity" Value="0.82" />
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="BotoiErtza" Property="Opacity" Value="0.65" />
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="BotoiErtza" Property="Opacity" Value="0.45" />
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <Style x:Key="EkintzaBotoia" TargetType="Button">
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
+        <!--  Kategoria botoien estiloa  -->
+        <Style
+            x:Key="KategoriaBotoia"
+            BasedOn="{StaticResource BotoiOrokorra}"
+            TargetType="Button" />
+
+        <!--  Ekintza botoien estiloa  -->
+        <Style
+            x:Key="EkintzaBotoia"
+            BasedOn="{StaticResource BotoiOrokorra}"
+            TargetType="Button">
+            <Setter Property="Margin" Value="0,0,0,9" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
 
     </Window.Resources>
@@ -35,166 +80,212 @@
     <Grid Margin="18">
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="380"/>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="380" />
         </Grid.ColumnDefinitions>
 
-        <!-- Ezkerreko aldea: produktuak -->
-        <Border Grid.Column="0"
-                Background="White"
-                CornerRadius="10"
-                Padding="18"
-                Margin="0,0,12,0">
+        <!--  Ezkerreko aldea: produktuak  -->
+        <Border
+            Grid.Column="0"
+            Margin="0,0,12,0"
+            Padding="18"
+            Background="White"
+            CornerRadius="10">
 
             <Grid>
 
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="PRODUKTUAK"
-                           FontSize="23"
-                           FontWeight="Bold"
-                           Margin="0,0,0,18"/>
+                <!--  Atzera botoia eta izenburua  -->
+                <Grid Margin="0,0,0,18">
 
-                <!-- Produktuen kategoriak -->
-                <WrapPanel x:Name="panelKategoriak"
-                           Grid.Row="1"
-                           Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                    <Button Content="Denak"
-                            Tag="Denak"
-                            Style="{StaticResource KategoriaBotoia}"
-                            Background="#168653"
-                            Click="Kategoria_Click"/>
+                    <Button
+                        Grid.Column="0"
+                        Click="BtnAtzera_Click"
+                        Content="Atzera"
+                        Style="{StaticResource EkintzaBotoia}" />
 
-                    <Button Content="Edariak"
-                            Tag="Edariak"
-                            Style="{StaticResource KategoriaBotoia}"
-                            Click="Kategoria_Click"/>
+                    <TextBlock
+                        Grid.Column="1"
+                        Margin="15,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="23"
+                        FontWeight="Bold"
+                        Text="PRODUKTUAK" />
 
-                    <Button Content="Kafeak"
-                            Tag="Kafeak"
-                            Style="{StaticResource KategoriaBotoia}"
-                            Click="Kategoria_Click"/>
+                </Grid>
 
-                    <Button Content="Janaria"
-                            Tag="Janaria"
-                            Style="{StaticResource KategoriaBotoia}"
-                            Click="Kategoria_Click"/>
+                <!--  Produktuen kategoriak  -->
+                <WrapPanel
+                    x:Name="panelKategoriak"
+                    Grid.Row="1"
+                    Margin="0,0,0,12">
+
+                    <Button
+                        Background="#168653"
+                        Click="Kategoria_Click"
+                        Content="Denak"
+                        Style="{StaticResource KategoriaBotoia}"
+                        Tag="Denak" />
+
+                    <Button
+                        Click="Kategoria_Click"
+                        Content="Edariak"
+                        Style="{StaticResource KategoriaBotoia}"
+                        Tag="Edariak" />
+
+                    <Button
+                        Click="Kategoria_Click"
+                        Content="Kafeak"
+                        Style="{StaticResource KategoriaBotoia}"
+                        Tag="Kafeak" />
+
+                    <Button
+                        Click="Kategoria_Click"
+                        Content="Janaria"
+                        Style="{StaticResource KategoriaBotoia}"
+                        Tag="Janaria" />
 
                 </WrapPanel>
 
-                <!-- Produktuak agertzen dira hemen -->
-                <ScrollViewer Grid.Row="2"
-                              VerticalScrollBarVisibility="Auto">
+                <!--  Produktuak agertzen dira hemen  -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
 
-                    <WrapPanel x:Name="panelProduktuak"
-                               Orientation="Horizontal"/>
+                    <WrapPanel x:Name="panelProduktuak" Orientation="Horizontal" />
 
                 </ScrollViewer>
 
             </Grid>
         </Border>
 
-        <!-- Eskuineko aldea: kontsumoa -->
-        <Border Grid.Column="1"
-                Background="White"
-                CornerRadius="10"
-                Padding="18">
+        <!--  Eskuineko aldea: kontsumoa  -->
+        <Border
+            Grid.Column="1"
+            Padding="18"
+            Background="White"
+            CornerRadius="10">
 
             <Grid>
 
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="KONTSUMOA"
-                           FontSize="21"
-                           FontWeight="Bold"
-                           Margin="0,0,0,18"/>
+                <TextBlock
+                    Margin="0,0,0,18"
+                    FontSize="21"
+                    FontWeight="Bold"
+                    Text="KONTSUMOA" />
 
-                <!-- Aukeratutako produktuak -->
-                <DataGrid x:Name="dgvKontsumoa"
-                          Grid.Row="1"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False"
-                          IsReadOnly="True"
-                          SelectionMode="Single"
-                          HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal"
-                          Background="White"
-                          BorderThickness="0">
+                <!--  Aukeratutako produktuak  -->
+                <DataGrid
+                    x:Name="dgvKontsumoa"
+                    Grid.Row="1"
+                    AutoGenerateColumns="False"
+                    Background="White"
+                    BorderThickness="0"
+                    CanUserAddRows="False"
+                    GridLinesVisibility="Horizontal"
+                    HeadersVisibility="Column"
+                    IsReadOnly="True"
+                    SelectionMode="Single">
 
                     <DataGrid.Columns>
 
-                        <DataGridTextColumn Header="Produktua"
-                                            Binding="{Binding Produktua}"
-                                            Width="*"/>
+                        <DataGridTextColumn
+                            Width="*"
+                            Binding="{Binding Produktua}"
+                            Header="Produktua" />
 
-                        <DataGridTextColumn Header="Kop."
-                                            Binding="{Binding Kantitatea}"
-                                            Width="55"/>
+                        <DataGridTextColumn
+                            Width="55"
+                            Binding="{Binding Kantitatea}"
+                            Header="Kop." />
 
-                        <DataGridTextColumn Header="Prezioa"
-                                            Binding="{Binding Prezioa, StringFormat={}{0:F2} €}"
-                                            Width="80"/>
+                        <DataGridTextColumn
+                            Width="80"
+                            Binding="{Binding Prezioa, StringFormat={}{0:F2} €}"
+                            Header="Prezioa" />
 
-                        <DataGridTextColumn Header="Guztira"
-                                            Binding="{Binding Guztira, StringFormat={}{0:F2} €}"
-                                            Width="85"/>
+                        <DataGridTextColumn
+                            Width="85"
+                            Binding="{Binding Guztira, StringFormat={}{0:F2} €}"
+                            Header="Guztira" />
 
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <Button Grid.Row="2"
-                        Content="Aukeratutako produktua kendu"
-                        Background="#E8EDF1"
-                        Style="{StaticResource EkintzaBotoia}"
-                        Margin="0,12,0,15"
-                        Click="BtnKendu_Click"/>
+                <!--  Aukeratutako produktua kentzeko botoia  -->
+                <Button
+                    Grid.Row="2"
+                    Margin="0,12,0,15"
+                    Background="#E8EDF1"
+                    Click="BtnKendu_Click"
+                    Content="Aukeratutako produktua kendu"
+                    Foreground="#263746"
+                    Style="{StaticResource EkintzaBotoia}" />
 
-                <!-- Guztizko prezioa eta ekintzak -->
+                <!--  Guztizko prezioa eta ekintzak  -->
                 <StackPanel Grid.Row="3">
 
-                    <Separator Margin="0,0,0,15"/>
+                    <Separator Margin="0,0,0,15" />
 
+                    <!--  Guztizko prezioa  -->
                     <Grid Margin="0,0,0,18">
 
-                        <TextBlock Text="GUZTIRA"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   VerticalAlignment="Center"/>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="20"
+                            FontWeight="Bold"
+                            Text="GUZTIRA" />
 
-                        <TextBlock x:Name="txtGuztira"
-                                   Text="0,00 €"
-                                   FontSize="27"
-                                   FontWeight="Bold"
-                                   Foreground="#168653"
-                                   HorizontalAlignment="Right"
-                                   VerticalAlignment="Center"/>
+                        <TextBlock
+                            x:Name="txtGuztira"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            FontSize="27"
+                            FontWeight="Bold"
+                            Foreground="#168653"
+                            Text="0,00 €" />
 
                     </Grid>
 
-                    <Button Content="KONTSUMOA AMAITU"
-                            Background="#168653"
-                            Foreground="White"
-                            Style="{StaticResource EkintzaBotoia}"
-                            Margin="0,0,0,9"
-                            Height="48"
-                            Click="BtnAmaitu_Click"/>
+                    <!--  Kontsumoa amaitzeko botoia  -->
+                    <Button
+                        Height="48"
+                        Background="#168653"
+                        Click="BtnAmaitu_Click"
+                        Content="KONTSUMOA AMAITU"
+                        Style="{StaticResource EkintzaBotoia}" />
 
-                    <Button Content="KONTSUMOA EZEZTATU"
-                            Background="#F0E5E5"
-                            Foreground="#8B3333"
-                            Style="{StaticResource EkintzaBotoia}"
-                            Height="42"
-                            Click="BtnEzeztatu_Click"/>
+                    <!--  Ticket-a deskargatzeko botoia  -->
+                    <Button
+                        Height="45"
+                        Background="#263746"
+                        Click="BtnTicketDeskargatu_Click"
+                        Content="Ticket-a deskargatu"
+                        Style="{StaticResource EkintzaBotoia}" />
+
+                    <!--  Kontsumoa ezeztatzeko botoia  -->
+                    <Button
+                        Height="42"
+                        Background="#F0E5E5"
+                        Click="BtnEzeztatu_Click"
+                        Content="KONTSUMOA EZEZTATU"
+                        Foreground="#8B3333"
+                        Style="{StaticResource EkintzaBotoia}" />
 
                 </StackPanel>
 

@@ -2,12 +2,358 @@
     x:Class="Elkartea_TPV.ErreserbakWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Elkartea_TPV"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="ErreserbakWindow"
-    Width="800"
-    Height="450"
-    mc:Ignorable="d">
-    <Grid />
+    Title="Erreserbak"
+    Width="1150"
+    Height="760"
+    MinWidth="1000"
+    MinHeight="650"
+    Background="#F2F3F5"
+    WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+
+        <!--  Botoi guztien estilo orokorra  -->
+        <Style x:Key="EkintzaBotoia" TargetType="Button">
+            <Setter Property="Background" Value="#263746" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="14,9" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="MinHeight" Value="38" />
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="BotoiErtza"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
+
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BotoiErtza" Property="Opacity" Value="0.82" />
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="BotoiErtza" Property="Opacity" Value="0.65" />
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="BotoiErtza" Property="Opacity" Value="0.45" />
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Margin="18">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Goiburua  -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button
+                Grid.Column="0"
+                Click="BtnAtzera_Click"
+                Content="Atzera"
+                Style="{StaticResource EkintzaBotoia}" />
+
+            <StackPanel
+                Grid.Column="1"
+                Margin="12,0,0,0"
+                VerticalAlignment="Center">
+
+                <TextBlock
+                    FontSize="24"
+                    FontWeight="Bold"
+                    Text="ERRESERBAK" />
+
+                <TextBlock
+                    Margin="0,3,0,0"
+                    FontSize="13"
+                    Foreground="#687783"
+                    Text="Aukeratu data, zerbitzua eta mahaia" />
+
+            </StackPanel>
+
+        </Grid>
+
+        <!--  Eduki nagusia  -->
+        <Grid Grid.Row="1">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="390" />
+            </Grid.ColumnDefinitions>
+
+            <!--  Ezkerreko panela: mahaiak  -->
+            <Border
+                Grid.Column="0"
+                Margin="0,0,12,0"
+                Padding="18"
+                Background="White"
+                CornerRadius="10">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock
+                        FontSize="20"
+                        FontWeight="Bold"
+                        Text="MAHAIAK" />
+
+                    <!--  Data eta zerbitzua  -->
+                    <Grid Grid.Row="1" Margin="0,16,0,12">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+
+                            <TextBlock
+                                Margin="0,0,0,6"
+                                FontWeight="SemiBold"
+                                Text="Data" />
+
+                            <DatePicker
+                                x:Name="dpData"
+                                Height="35"
+                                SelectedDate="{x:Null}" />
+
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+
+                            <TextBlock
+                                Margin="0,0,0,6"
+                                FontWeight="SemiBold"
+                                Text="Zerbitzua" />
+
+                            <ComboBox
+                                x:Name="cmbZerbitzua"
+                                Height="35"
+                                VerticalContentAlignment="Center"
+                                SelectedIndex="0">
+
+                                <ComboBoxItem Content="Bazkaria" />
+                                <ComboBoxItem Content="Afaria" />
+
+                            </ComboBox>
+
+                        </StackPanel>
+
+                    </Grid>
+
+                    <!--  Koloreen azalpena  -->
+                    <WrapPanel Grid.Row="2" Margin="0,4,0,12">
+
+                        <StackPanel Margin="0,0,18,0" Orientation="Horizontal">
+
+                            <Border
+                                Width="12"
+                                Height="12"
+                                Margin="0,0,5,0"
+                                Background="#55B879"
+                                CornerRadius="3" />
+
+                            <TextBlock FontSize="12" Text="Libre" />
+
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,18,0" Orientation="Horizontal">
+
+                            <Border
+                                Width="12"
+                                Height="12"
+                                Margin="0,0,5,0"
+                                Background="#E66C6C"
+                                CornerRadius="3" />
+
+                            <TextBlock FontSize="12" Text="Erreserbatuta" />
+
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+
+                            <Border
+                                Width="12"
+                                Height="12"
+                                Margin="0,0,5,0"
+                                Background="#4285C5"
+                                CornerRadius="3" />
+
+                            <TextBlock FontSize="12" Text="Hautatuta" />
+
+                        </StackPanel>
+
+                    </WrapPanel>
+
+                    <!--  Mahaiak irudiekin  -->
+                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+
+                        <UniformGrid
+                            x:Name="panelMahaiak"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Top"
+                            Columns="3" />
+
+                    </ScrollViewer>
+
+                </Grid>
+            </Border>
+
+            <!--  Eskuineko panela  -->
+            <Border
+                Grid.Column="1"
+                Padding="18"
+                Background="White"
+                CornerRadius="10">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock
+                        FontSize="20"
+                        FontWeight="Bold"
+                        Text="ERRESERBAREN DATUAK" />
+
+                    <!--  Hautatutako mahaiaren informazioa  -->
+                    <Border
+                        Grid.Row="1"
+                        Margin="0,15,0,12"
+                        Padding="13"
+                        Background="#F2F3F5"
+                        CornerRadius="8">
+
+                        <StackPanel>
+
+                            <TextBlock
+                                Margin="0,0,0,7"
+                                FontWeight="SemiBold"
+                                Text="Hautatutako mahaia" />
+
+                            <TextBlock
+                                x:Name="txtMahaiAukeratua"
+                                FontSize="16"
+                                FontWeight="Bold"
+                                Foreground="#168653"
+                                Text="Ez duzu mahairik aukeratu" />
+
+                            <TextBlock
+                                x:Name="txtMahaiEserlekuak"
+                                Margin="0,4,0,0"
+                                FontSize="13"
+                                Foreground="#687783"
+                                Text="" />
+
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Erreserba egiteko botoia  -->
+                    <Button
+                        Grid.Row="2"
+                        Height="45"
+                        Background="#168653"
+                        Click="BtnErreserbaEgin_Click"
+                        Content="ERRESERBA EGIN"
+                        Style="{StaticResource EkintzaBotoia}" />
+
+                    <!--  Erreserben zerrenda  -->
+                    <StackPanel Grid.Row="3" Margin="0,16,0,8">
+
+                        <TextBlock
+                            Margin="0,0,0,10"
+                            FontSize="17"
+                            FontWeight="Bold"
+                            Text="ERRESERBAK" />
+
+                        <DataGrid
+                            x:Name="dgvErreserbak"
+                            AutoGenerateColumns="False"
+                            Background="White"
+                            BorderThickness="0"
+                            CanUserAddRows="False"
+                            GridLinesVisibility="Horizontal"
+                            HeadersVisibility="Column"
+                            IsReadOnly="True"
+                            SelectionMode="Single"
+                            SelectionUnit="FullRow">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn
+                                    Width="55"
+                                    Binding="{Binding MahaiZenbakia}"
+                                    Header="Mahaia" />
+
+                                <DataGridTextColumn
+                                    Width="75"
+                                    Binding="{Binding BazkariaAfaria}"
+                                    Header="Zerbitzua" />
+
+                                <DataGridTextColumn
+                                    Width="*"
+                                    Binding="{Binding ErabiltzaileIzena}"
+                                    Header="Erabiltzailea" />
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                    </StackPanel>
+
+                    <!--  Erreserba ezabatzeko botoia  -->
+                    <Button
+                        Grid.Row="4"
+                        Height="42"
+                        Background="#F0E5E5"
+                        Click="BtnErreserbaEzabatu_Click"
+                        Content="ERRESERBA EZABATU"
+                        Foreground="#8B3333"
+                        Style="{StaticResource EkintzaBotoia}" />
+
+                </Grid>
+            </Border>
+
+        </Grid>
+
+    </Grid>
 </Window>

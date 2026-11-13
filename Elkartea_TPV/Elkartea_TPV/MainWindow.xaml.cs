@@ -47,8 +47,8 @@ namespace Elkartea_TPV
 
         private void BtnErreserbak_Click(object sender, RoutedEventArgs e)
         {
-            ErreserbakWindow leihoa = new ErreserbakWindow();
-            leihoa.ShowDialog();
+            ErreserbakWindow leihoa = new ErreserbakWindow(_erabiltzailea);
+            leihoa.Show();
         }
     }
 }

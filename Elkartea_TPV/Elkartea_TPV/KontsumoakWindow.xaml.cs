@@ -4,15 +4,14 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Globalization;
-using System.Text;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
+using QuestPDF.Fluent;
+using PdfHelpers = QuestPDF.Helpers;
+using PdfColors = QuestPDF.Helpers.Colors;
 using Elkartea_TPV.Models;
 
 namespace Elkartea_TPV
@@ -25,6 +24,11 @@ namespace Elkartea_TPV
         private readonly ObservableCollection<KontsumoLerroa> _kontsumoak = new();
 
         private List<Stocka> _produktuak = new();
+
+        // Azken kontsumoaren ticket-aren datuak gordetzen ditu.
+        private List<KontsumoLerroa>? _azkenTicketLerroak;
+        private double _azkenTicketGuztira;
+        private DateTime _azkenTicketData;
 
         public KontsumoakWindow(Erabiltzaileak erabiltzailea)
         {
@@ -144,81 +148,52 @@ namespace Elkartea_TPV
         }
 
         // Produktu bakoitzari dagokion kategoria itzultzen du.
-
-        // Produktuaren izena normalizatzen du, maiuskulak eta azentuak kenduz.
-        private string NormalizatuIzena(string izena)
-        {
-            string testua = izena.Trim().ToLowerInvariant()
-                .Normalize(NormalizationForm.FormD);
-
-            StringBuilder emaitza = new StringBuilder();
-
-            foreach (char karakterea in testua)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(karakterea)
-                    != UnicodeCategory.NonSpacingMark)
-                {
-                    emaitza.Append(karakterea);
-                }
-            }
-
-            return emaitza.ToString()
-                .Normalize(NormalizationForm.FormC);
-        }
-
-        // Produktu bakoitzari dagokion kategoria itzultzen du.
         private string LortuKategoria(string produktua)
         {
-            string izena = NormalizatuIzena(produktua);
+            string izena = produktua.Trim().ToLowerInvariant();
 
             // Edariak
-            if (izena.Contains("coca") ||
-                izena.Contains("kas") ||
-                izena.Contains("garagard") ||
-                izena.Contains("cervez") ||
-                izena == "ura" ||
-                izena == "agua")
+            if (izena == "coca-cola" ||
+                izena == "kas_naranja" ||
+                izena == "garagardoa" ||
+                izena == "ura")
             {
                 return "Edariak";
             }
 
             // Kafeak
-            if (izena.Contains("kafe") ||
-                izena.Contains("cafe") ||
-                izena.Contains("ebaki") ||
-                izena.Contains("cortado"))
+            if (izena == "ebakia" ||
+                izena == "kafe_deskafeinatua" ||
+                izena == "kafe_hutsa" ||
+                izena == "kafesnia")
             {
                 return "Kafeak";
-            }
-
-            // Janaria
-            if (izena.Contains("gildak") ||
-                izena.Contains("kroketak") ||
-                izena.Contains("patatak") ||
-                izena.Contains("rabak") ||
-                izena.Contains("azeitunak")) 
-                
-            {
-                return "Janaria";
             }
 
             return "Janaria";
         }
 
-
-        // Produktu bakoitzari dagokion irudiaren izena itzultzen du.
+        // Produktuaren izenaren arabera dagokion irudia itzultzen du.
         private string LortuIrudia(string produktua)
         {
             switch (produktua.Trim().ToLowerInvariant())
             {
+                // Edariak
                 case "coca-cola":
                     return "coca-cola.png";
 
-                case "ebakia":
-                    return "ebakia.png";
-
                 case "garagardoa":
                     return "garagardoa.png";
+
+                case "kas_naranja":
+                    return "kas_naranja.png";
+
+                case "ura":
+                    return "ura.png";
+
+                // Kafeak
+                case "ebakia":
+                    return "ebakia.png";
 
                 case "kafe_deskafeinatua":
                     return "kafe_deskafeinatua.png";
@@ -229,12 +204,21 @@ namespace Elkartea_TPV
                 case "kafesnia":
                     return "kafesnia.png";
 
-                case "kas_naranja":
-                case "kas":
-                    return "kas_naranja.png";
+                // Janaria
+                case "gildak":
+                    return "gildak.png";
 
-                case "ura":
-                    return "ura.png";
+                case "kroketak":
+                    return "kroketak.png";
+
+                case "patatak":
+                    return "patatak.png";
+
+                case "rabak":
+                    return "rabak.png";
+
+                case "azeitunak":
+                    return "azeitunak.png";
 
                 default:
                     return "";
@@ -263,14 +247,15 @@ namespace Elkartea_TPV
             KargatuProduktuak(kategoria);
         }
 
-        // Produktu bat aukeratutako kontsumora gehitzen du.
         // Produktu bat aukeratzean, gehitu nahi den kantitatea eskatzen du.
         private void Produktua_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button botoia || botoia.Tag is not Stocka produktua)
+            if (sender is not Button botoia ||
+                botoia.Tag is not Stocka produktua)
+            {
                 return;
+            }
 
-            // Kantitatea eskatu.
             int? kantitatea = EskatuKantitatea(produktua.Produktua);
 
             if (kantitatea == null)
@@ -278,18 +263,21 @@ namespace Elkartea_TPV
 
             if (kantitatea <= 0)
             {
-                MessageBox.Show("Kantitatea 0 baino handiagoa izan behar da.",
-                    "Abisua", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(
+                    "Kantitatea 0 baino handiagoa izan behar da.",
+                    "Abisua",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
-            // Produktua dagoeneko saskian dagoen egiaztatu.
+            // Produktua dagoeneko saskian dagoen egiaztatzen du.
             KontsumoLerroa? lerroa = _kontsumoak.FirstOrDefault(
                 x => x.Produktua == produktua.Produktua);
 
             int aurrekoKantitatea = lerroa?.Kantitatea ?? 0;
 
-            // Stock nahikoa dagoen egiaztatu.
+            // Stock nahikoa dagoen egiaztatzen du.
             if (aurrekoKantitatea + kantitatea.Value > produktua.Kantitatea)
             {
                 MessageBox.Show(
@@ -300,7 +288,7 @@ namespace Elkartea_TPV
                 return;
             }
 
-            // Saskian gehitu edo dagoen kantitatea handitu.
+            // Saskian gehitu edo dagoen kantitatea handitzen du.
             if (lerroa != null)
             {
                 lerroa.Kantitatea += kantitatea.Value;
@@ -451,12 +439,18 @@ namespace Elkartea_TPV
                 return;
             }
 
-            double guztira = 0;
+            // Ticket-a sortzeko kontsumoaren kopia gordetzen du.
+            List<KontsumoLerroa> ticketLerroak = _kontsumoak
+                .Select(lerroa => new KontsumoLerroa
+                {
+                    Produktua = lerroa.Produktua,
+                    Kantitatea = lerroa.Kantitatea,
+                    Prezioa = lerroa.Prezioa
+                })
+                .ToList();
 
-            foreach (KontsumoLerroa lerroa in _kontsumoak)
-            {
-                guztira += lerroa.Guztira;
-            }
+            double guztira = ticketLerroak.Sum(lerroa => lerroa.Guztira);
+            DateTime data = DateTime.Now;
 
             MessageBoxResult erantzuna = MessageBox.Show(
                 "Kontsumoa amaitu nahi duzu?\n\n" +
@@ -470,26 +464,13 @@ namespace Elkartea_TPV
                 return;
             }
 
+            // Lehenengo kontsumoa gordetzen du eta stocka eguneratzen du.
             try
             {
                 _datuBasea.GordeKontsumoaEtaEguneratuStocka(
                     _erabiltzailea.ErabiltzaileIzena,
-                    _kontsumoak
+                    ticketLerroak
                 );
-
-                MessageBox.Show(
-                    "Kontsumoa behar bezala gorde da.\n\n" +
-                    "Erabiltzailea: " + _erabiltzailea.ErabiltzaileIzena +
-                    "\nGuztira: " + guztira.ToString("0.00") + " €",
-                    "Kontsumoa gordeta",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
-                _kontsumoak.Clear();
-
-                KalkulatuGuztira();
-
-                KargatuProduktuak("Denak");
             }
             catch (InvalidOperationException ex)
             {
@@ -500,6 +481,7 @@ namespace Elkartea_TPV
                     MessageBoxImage.Warning);
 
                 KargatuProduktuak("Denak");
+                return;
             }
             catch (Exception ex)
             {
@@ -508,7 +490,198 @@ namespace Elkartea_TPV
                     "Errorea",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+                return;
             }
+
+            // Azken kontsumoaren ticket-aren datuak gordetzen ditu.
+            _azkenTicketLerroak = ticketLerroak;
+            _azkenTicketGuztira = guztira;
+            _azkenTicketData = data;
+
+            // Saskia garbitzen du eta stocka berriro kargatzen du.
+            _kontsumoak.Clear();
+
+            KalkulatuGuztira();
+            KargatuProduktuak("Denak");
+
+            MessageBox.Show(
+                "Kontsumoa behar bezala gorde da.",
+                "Kontsumoa gordeta",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        // Azken kontsumoaren ticket-a PDF formatuan deskargatzen du.
+        private void BtnTicketDeskargatu_Click(object sender, RoutedEventArgs e)
+        {
+            if (_azkenTicketLerroak == null ||
+                _azkenTicketLerroak.Count == 0)
+            {
+                MessageBox.Show(
+                    "Ez dago deskargatzeko ticket-ik. Lehenengo kontsumo bat amaitu behar duzu.",
+                    "Ticket-a",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                return;
+            }
+
+            try
+            {
+                bool pdfGordeta = SortuTicketPdf(
+                    _azkenTicketLerroak,
+                    _azkenTicketGuztira,
+                    _azkenTicketData);
+
+                if (pdfGordeta)
+                {
+                    MessageBox.Show(
+                        "Ticket-a behar bezala deskargatu da.",
+                        "Ticket-a gordeta",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Errorea ticket-a sortzean:\n" + ex.Message,
+                    "PDF errorea",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        // Kontsumoaren ticket-a PDF formatuan sortzen du.
+        private bool SortuTicketPdf(
+            List<KontsumoLerroa> lerroak,
+            double guztira,
+            DateTime data)
+        {
+            SaveFileDialog elkarrizketa = new SaveFileDialog
+            {
+                Title = "Ticket-a PDF formatuan gorde",
+                Filter = "PDF fitxategiak (*.pdf)|*.pdf",
+                FileName = "Ticket_" + data.ToString("yyyyMMdd_HHmmss"),
+                DefaultExt = ".pdf",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            // Erabiltzaileak gordetzeko kokapena aukeratzen du.
+            if (elkarrizketa.ShowDialog(this) != true)
+            {
+                return false;
+            }
+
+            // QuestPDFren Community lizentzia erabiltzen du.
+            QuestPDF.Settings.License =
+                QuestPDF.Infrastructure.LicenseType.Community;
+
+            Document.Create(dokumentua =>
+            {
+                dokumentua.Page(orria =>
+                {
+                    orria.Size(PdfHelpers.PageSizes.A4);
+                    orria.Margin(40);
+                    orria.PageColor(PdfColors.White);
+
+                    orria.DefaultTextStyle(estiloa =>
+                        estiloa.FontSize(11).FontFamily("Lato"));
+
+                    orria.Content().Column(kontentua =>
+                    {
+                        kontentua.Spacing(12);
+
+                        // Ticket-aren goiburua.
+                        kontentua.Item()
+                            .AlignCenter()
+                            .Text("ELKARTEA_TPV")
+                            .FontSize(25)
+                            .Bold()
+                            .FontColor(PdfColors.Green.Darken2);
+
+                        kontentua.Item()
+                            .AlignCenter()
+                            .Text("KONTSUMOAREN TICKET-A")
+                            .FontSize(14)
+                            .SemiBold();
+
+                        kontentua.Item()
+                            .PaddingVertical(8)
+                            .LineHorizontal(1)
+                            .LineColor(PdfColors.Grey.Lighten2);
+
+                        // Kontsumoaren datuak.
+                        kontentua.Item().Text(
+                            "Data: " + data.ToString("dd/MM/yyyy HH:mm"));
+
+                        kontentua.Item().Text(
+                            "Erabiltzailea: " + _erabiltzailea.ErabiltzaileIzena);
+
+                        // Produktuen taula.
+                        kontentua.Item().PaddingTop(15).Table(taula =>
+                        {
+                            taula.ColumnsDefinition(zutabeak =>
+                            {
+                                zutabeak.RelativeColumn(4);
+                                zutabeak.RelativeColumn(1);
+                                zutabeak.RelativeColumn(2);
+                                zutabeak.RelativeColumn(2);
+                            });
+
+                            taula.Header(goiburua =>
+                            {
+                                goiburua.Cell().Text("Produktua").Bold();
+                                goiburua.Cell().AlignCenter().Text("Kop.").Bold();
+                                goiburua.Cell().AlignRight().Text("Prezioa").Bold();
+                                goiburua.Cell().AlignRight().Text("Guztira").Bold();
+                            });
+
+                            foreach (KontsumoLerroa lerroa in lerroak)
+                            {
+                                taula.Cell().PaddingVertical(6)
+                                    .Text(lerroa.Produktua);
+
+                                taula.Cell().PaddingVertical(6)
+                                    .AlignCenter()
+                                    .Text(lerroa.Kantitatea.ToString());
+
+                                taula.Cell().PaddingVertical(6)
+                                    .AlignRight()
+                                    .Text(lerroa.Prezioa.ToString("0.00") + " €");
+
+                                taula.Cell().PaddingVertical(6)
+                                    .AlignRight()
+                                    .Text(lerroa.Guztira.ToString("0.00") + " €");
+                            }
+                        });
+
+                        // Azken prezioa.
+                        kontentua.Item()
+                            .PaddingTop(15)
+                            .LineHorizontal(1)
+                            .LineColor(PdfColors.Grey.Lighten2);
+
+                        kontentua.Item()
+                            .AlignRight()
+                            .Text("GUZTIRA: " + guztira.ToString("0.00") + " €")
+                            .FontSize(20)
+                            .Bold()
+                            .FontColor(PdfColors.Green.Darken2);
+
+                        // Ticket-aren amaierako mezua.
+                        kontentua.Item()
+                            .PaddingTop(30)
+                            .AlignCenter()
+                            .Text("Eskerrik asko!")
+                            .FontSize(13)
+                            .Italic();
+                    });
+                });
+            }).GeneratePdf(elkarrizketa.FileName);
+
+            return true;
         }
 
         // Kontsumo osoa ezeztatzen du.
@@ -532,5 +705,41 @@ namespace Elkartea_TPV
                 KalkulatuGuztira();
             }
         }
+
+
+        // Menu nagusira itzultzen da.
+        private void BtnAtzera_Click(object sender, RoutedEventArgs e)
+        {
+            if (_kontsumoak.Count > 0)
+            {
+                MessageBoxResult erantzuna = MessageBox.Show(
+                    "Kontsumoa amaitu gabe dago. Ziur zaude menura itzuli nahi duzula? Aukeratutako produktuak galduko dira.",
+                    "Atzera",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (erantzuna != MessageBoxResult.Yes)
+                    return;
+            }
+
+            // Lehendik dagoen menu nagusia bilatzen du.
+            MainWindow? leihoNagusia = Application.Current.Windows
+                .OfType<MainWindow>()
+                .FirstOrDefault();
+
+            if (leihoNagusia == null)
+            {
+                leihoNagusia = new MainWindow(_erabiltzailea);
+                leihoNagusia.Show();
+            }
+            else
+            {
+                leihoNagusia.Show();
+                leihoNagusia.Activate();
+            }
+
+            this.Close();
+        }
+
     }
 }
