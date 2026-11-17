@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Elkartea_TPV.Models;
@@ -34,6 +35,8 @@ namespace Elkartea_TPV
             txtKantitatea.Clear();
             txtPrezioa.Clear();
 
+            cmbKategoria.SelectedIndex = 0;
+
             dgStocka.SelectedItem = null;
         }
 
@@ -55,22 +58,32 @@ namespace Elkartea_TPV
                 return;
             }
 
+            string prezioTestua = txtPrezioa.Text.Trim().Replace(',', '.');
+
             if (!double.TryParse(
-                txtPrezioa.Text,
+                prezioTestua,
                 NumberStyles.Number,
-                CultureInfo.CurrentCulture,
+                CultureInfo.InvariantCulture,
                 out double prezioa) || prezioa < 0)
             {
                 MessageBox.Show("Sartu prezio baliagarri bat.");
                 return;
             }
 
+            if (cmbKategoria.SelectedItem is not ComboBoxItem kategoriaAukeratua)
+            {
+                MessageBox.Show("Aukeratu produktuaren kategoria.");
+                return;
+            }
+
+            string kategoria = kategoriaAukeratua.Content.ToString() ?? "";
+
             try
             {
                 if (_aukeratutakoId == null)
                 {
                     _datuBasea.GordeStocka(
-                        produktua, kantitatea, prezioa);
+                        produktua, kantitatea, prezioa, kategoria);
 
                     MessageBox.Show("Produktua gehitu da.");
                 }
@@ -80,7 +93,8 @@ namespace Elkartea_TPV
                         _aukeratutakoId.Value,
                         produktua,
                         kantitatea,
-                        prezioa);
+                        prezioa,
+                        kategoria);
 
                     MessageBox.Show("Produktua eguneratu da.");
                 }
@@ -102,13 +116,18 @@ namespace Elkartea_TPV
         {
             if (dgStocka.SelectedItem is Stocka produktua)
             {
-                _aukeratutakoId     =   produktua.Id;
+                _aukeratutakoId = produktua.Id;
 
-                txtProduktua.Text   =   produktua.Produktua;
-                txtKantitatea.Text  =   produktua.Kantitatea.ToString();
+                txtProduktua.Text = produktua.Produktua;
+                txtKantitatea.Text = produktua.Kantitatea.ToString();
 
-                txtPrezioa.Text = produktua.Prezioa.ToString(
-                    CultureInfo.CurrentCulture);
+                txtPrezioa.Text = produktua.Prezioa.ToString("0.00",CultureInfo.CurrentCulture);
+
+                // Aukeratutako produktuaren kategoria ComboBox-ean erakutsi
+                cmbKategoria.SelectedItem = cmbKategoria.Items
+                    .Cast<ComboBoxItem>()
+                    .FirstOrDefault(item =>
+                        item.Content.ToString() == produktua.Kategoria);
             }
         }
 

@@ -1,115 +1,208 @@
-﻿using System.Collections.Generic;
+﻿
+using System;
+using System.Collections.Generic;
 using System.IO;
 using Elkartea_TPV.Models;
 using Microsoft.Data.Sqlite;
+
 namespace Elkartea_TPV;
 
 public class DatuBasea
 {
-    // Bide absolutua erabiltzen dugu, fitxategia aplikazioaren karpetan gordetzeko.
+    // Aplikazioak erabiliko duen SQLite datu-basearen fitxategiaren bidea gordetzen du.
     public string FitxategiBidea { get; } = Path.Combine(
         AppContext.BaseDirectory,
         "elkartea_tpv.db");
 
+    // Datu-basearekin konektatzeko behar den konexio-katea sortzen du.
     private string KonexioKatea => new SqliteConnectionStringBuilder
     {
         DataSource = FitxategiBidea
     }.ToString();
 
+
+    // Aplikazioa abiaraztean datu-basea eta bere taulak prestatzen ditu.
     public void Hasieratu()
     {
-        // Karpeta sortzen dugu, oraindik existitzen ez bada.
+        // Datu-basearen fitxategia gordeko den karpeta sortzen du.
         Directory.CreateDirectory(Path.GetDirectoryName(FitxategiBidea)!);
 
+        // SQLite datu-basearekin konexio berria sortzen du.
         using var konexioa = new SqliteConnection(KonexioKatea);
+
+        // Datu-baserako konexioa irekitzen du.
         konexioa.Open();
 
+        // SQL komandoak exekutatzeko komando-objektua sortzen du.
         using var komandoa = konexioa.CreateCommand();
-     
+
+        // Aplikazioak behar dituen taulak sortzen ditu.
         komandoa.CommandText = """
-			-- 1. Erabiltzaileen taula (Administratzaileak eta Erabiltzaile komunak)
-			CREATE TABLE IF NOT EXISTS Erabiltzaileak (
-				Id INTEGER PRIMARY KEY AUTOINCREMENT,
-				ErabiltzaileIzena TEXT NOT NULL UNIQUE,
-				Pasahitza TEXT NOT NULL,
-				Mota TEXT NOT NULL CHECK(Mota IN ('Administratzailea', 'Erabiltzailea'))
-			);
+            -- 1. Erabiltzaileen taula (Administratzaileak eta Erabiltzaile komunak)
+            CREATE TABLE IF NOT EXISTS Erabiltzaileak (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ErabiltzaileIzena TEXT NOT NULL UNIQUE,
+                Pasahitza TEXT NOT NULL,
+                Mota TEXT NOT NULL CHECK(Mota IN ('Administratzailea', 'Erabiltzailea'))
+            );
 
-			-- 2. Biltegiko stockaren taula (Produktuak eta prezioak)
-			CREATE TABLE IF NOT EXISTS Stocka (
-				Id INTEGER PRIMARY KEY AUTOINCREMENT,
-				Produktua TEXT NOT NULL UNIQUE,
-				Kantitatea INTEGER NOT NULL DEFAULT 0,
-				Prezioa REAL NOT NULL DEFAULT 0.0
-			);
+            -- 2. Biltegiko stockaren taula (Produktuak, prezioak eta kategoriak)
+            CREATE TABLE IF NOT EXISTS Stocka (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Produktua TEXT NOT NULL UNIQUE,
+                Kantitatea INTEGER NOT NULL DEFAULT 0,
+                Prezioa REAL NOT NULL DEFAULT 0.0,
+                Kategoria TEXT NOT NULL DEFAULT ''
+            );
 
-			-- 3. Mahaien erreserben taula (Bazkaria edo afaria bereiziz)
-			CREATE TABLE IF NOT EXISTS Erreserbak (
-				Id INTEGER PRIMARY KEY AUTOINCREMENT,
-				MahaiZenbakia INTEGER NOT NULL,
-				Data TEXT NOT NULL,
-				BazkariaAfaria TEXT NOT NULL CHECK(BazkariaAfaria IN ('Bazkaria', 'Afaria')),
-				ErabiltzaileIzena TEXT NOT NULL
-			);
+            -- 3. Mahaien erreserben taula (Bazkaria edo afaria bereiziz)
+            CREATE TABLE IF NOT EXISTS Erreserbak (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                MahaiZenbakia INTEGER NOT NULL,
+                Data TEXT NOT NULL,
+                BazkariaAfaria TEXT NOT NULL CHECK(BazkariaAfaria IN ('Bazkaria', 'Afaria')),
+                ErabiltzaileIzena TEXT NOT NULL
+            );
 
-			-- 4. Kontsumoen/Ticketen taula
-			CREATE TABLE IF NOT EXISTS Kontsumoak (
-				Id INTEGER PRIMARY KEY AUTOINCREMENT,
-				ErabiltzaileIzena TEXT NOT NULL,
-				Produktua TEXT NOT NULL,
-				Kantitatea INTEGER NOT NULL,
-				PrezioTotala REAL NOT NULL,
-				DataUtc TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now'))
-			);
-			""";
+            -- 4. Kontsumoen/Ticketen taula
+            CREATE TABLE IF NOT EXISTS Kontsumoak (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ErabiltzaileIzena TEXT NOT NULL,
+                Produktua TEXT NOT NULL,
+                Kantitatea INTEGER NOT NULL,
+                PrezioTotala REAL NOT NULL,
+                DataUtc TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now'))
+            );
+            """;
 
+        // SQL kode osoa exekutatzen du eta taulak sortzen ditu.
         komandoa.ExecuteNonQuery();
 
-        // Hasierako administratzaile bat sortu adibide gisa (existitzen ez bada)
+        // Stocka taulan Kategoria zutabea dagoen egiaztatzen du.
+        using var egiaztatuKomandoa = konexioa.CreateCommand();
+        egiaztatuKomandoa.CommandText = "PRAGMA table_info(Stocka);";
+
+        bool kategoriaDago = false;
+
+        using (var irakurlea = egiaztatuKomandoa.ExecuteReader())
+        {
+            while (irakurlea.Read())
+            {
+                if (irakurlea.GetString(1) == "Kategoria")
+                {
+                    kategoriaDago = true;
+                    break;
+                }
+            }
+        }
+
+        // Kategoria zutabea ez badago, gehitu egiten du.
+        if (!kategoriaDago)
+        {
+            using var gehituKomandoa = konexioa.CreateCommand();
+
+            gehituKomandoa.CommandText = """
+                ALTER TABLE Stocka
+                ADD COLUMN Kategoria TEXT NOT NULL DEFAULT '';
+                """;
+
+            gehituKomandoa.ExecuteNonQuery();
+        }
+
+        // Lehenengo administratzailea eta probako erabiltzaileak sortzen ditu.
         SortuHasierakoErabiltzaileak(konexioa);
+
+        //Produktuak sortzen ditu hasierako stockarekin.
+        SortuHasierakoProduktuak(konexioa);
     }
 
+    
+    // Aplikazioaren lehen erabilerarako hasierako erabiltzaileak sortzen ditu.
     private void SortuHasierakoErabiltzaileak(SqliteConnection konexioa)
+    {
+        // SQL komandoa sortzen du.
+        using var komandoa = konexioa.CreateCommand();
+
+        // Erabiltzaileak bakarrik gehitzen dira lehendik existitzen ez badira.
+        komandoa.CommandText = """
+            INSERT OR IGNORE INTO Erabiltzaileak
+            (ErabiltzaileIzena, Pasahitza, Mota)
+            VALUES
+            ('admin', 'admin123', 'Administratzailea'),
+            ('proba', '123456', 'Erabiltzailea'),
+            ('haizea', '123456', 'Erabiltzailea');
+            """;
+
+        // Hasierako erabiltzaileak datu-basean sartzen ditu.
+        komandoa.ExecuteNonQuery();
+    }
+
+    // Hasierako produktu guztiak datu-basean sartzen ditu.
+    private void SortuHasierakoProduktuak(SqliteConnection konexioa)
     {
         using var komandoa = konexioa.CreateCommand();
 
         komandoa.CommandText = """
-        INSERT OR IGNORE INTO Erabiltzaileak
-        (ErabiltzaileIzena, Pasahitza, Mota)
+        INSERT OR IGNORE INTO Stocka
+        (Produktua, Kantitatea, Prezioa, Kategoria)
         VALUES
-        ('admin', 'admin123', 'Administratzailea'),
-        ('proba', '123456', 'Erabiltzailea');
+        ('Coca-Cola', 20, 2.60, 'Edariak'),
+        ('Garagardoa', 20, 2.00, 'Edariak'),
+        ('Kas Naranja', 20, 2.50, 'Edariak'),
+        ('Ura', 20, 1.50, 'Edariak'),
+
+        ('Ebakia', 20, 1.20, 'Kafeak'),
+        ('Kafe Deskafeinatua', 20, 1.30, 'Kafeak'),
+        ('Kafe Hutsa', 20, 1.00, 'Kafeak'),
+        ('Kafesnia', 20, 1.20, 'Kafeak'),
+
+        ('Azeitunak', 20, 1.50, 'Janaria'),
+        ('Gildak', 20, 2.00, 'Janaria'),
+        ('Kroketak', 20, 2.50, 'Janaria'),
+        ('Patatak', 20, 2.00, 'Janaria'),
+        ('Rabak', 20, 2.50, 'Janaria');
         """;
 
         komandoa.ExecuteNonQuery();
     }
 
-    // Adibidez, erabiltzaile berri bat gehitzeko metodoa
+
+    // Erabiltzaile berri bat datu-basean gordetzen du.
     public void GordeErabiltzailea(string izena, string pasahitza, string mota)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
 
         using var komandoa = konexioa.CreateCommand();
+
         komandoa.CommandText = """
-			INSERT INTO Erabiltzaileak (ErabiltzaileIzena, Pasahitza, Mota)
-			VALUES ($izena, $pasahitza, $mota);
-			""";
+            INSERT INTO Erabiltzaileak (ErabiltzaileIzena, Pasahitza, Mota)
+            VALUES ($izena, $pasahitza, $mota);
+            """;
+
         komandoa.Parameters.AddWithValue("$izena", izena);
         komandoa.Parameters.AddWithValue("$pasahitza", pasahitza);
         komandoa.Parameters.AddWithValue("$mota", mota);
+
         komandoa.ExecuteNonQuery();
     }
 
 
+    // Datu-basean gordetako erabiltzaile guztiak lortzen ditu.
     public List<Erabiltzaileak> LortuErabiltzaileak()
     {
         var erabiltzaileak = new List<Erabiltzaileak>();
+
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
-        komandoa.CommandText = "SELECT Id, ErabiltzaileIzena, Pasahitza, Mota FROM Erabiltzaileak;";
+
+        komandoa.CommandText =
+            "SELECT Id, ErabiltzaileIzena, Pasahitza, Mota FROM Erabiltzaileak;";
+
         using var irakurlea = komandoa.ExecuteReader();
+
         while (irakurlea.Read())
         {
             erabiltzaileak.Add(new Erabiltzaileak
@@ -120,18 +213,26 @@ public class DatuBasea
                 Mota = irakurlea.GetString(3)
             });
         }
+
         return erabiltzaileak;
     }
 
 
+    // Biltegiko produktu guztiak eta haien datuak lortzen ditu.
     public List<Stocka> LortuStocka()
     {
         var stocka = new List<Stocka>();
+
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
-        komandoa.CommandText = "SELECT Id, Produktua, Kantitatea, Prezioa FROM Stocka;";
+
+        komandoa.CommandText =
+            "SELECT Id, Produktua, Kantitatea, Prezioa, Kategoria FROM Stocka;";
+
         using var irakurlea = komandoa.ExecuteReader();
+
         while (irakurlea.Read())
         {
             stocka.Add(new Stocka
@@ -139,20 +240,30 @@ public class DatuBasea
                 Id = irakurlea.GetInt64(0),
                 Produktua = irakurlea.GetString(1),
                 Kantitatea = irakurlea.GetInt32(2),
-                Prezioa = irakurlea.GetDouble(3)
+                Prezioa = irakurlea.GetDouble(3),
+                Kategoria = irakurlea.GetString(4)
             });
         }
+
         return stocka;
     }
 
+
+    // Datu-basean gordetako erreserba guztiak lortzen ditu.
     public List<Erreserbak> LortuErreserbak()
     {
         var erreserbak = new List<Erreserbak>();
+
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
-        komandoa.CommandText = "SELECT Id, MahaiZenbakia, Data, BazkariaAfaria, ErabiltzaileIzena FROM Erreserbak;";
+
+        komandoa.CommandText =
+            "SELECT Id, MahaiZenbakia, Data, BazkariaAfaria, ErabiltzaileIzena FROM Erreserbak;";
+
         using var irakurlea = komandoa.ExecuteReader();
+
         while (irakurlea.Read())
         {
             erreserbak.Add(new Erreserbak
@@ -164,17 +275,26 @@ public class DatuBasea
                 ErabiltzaileIzena = irakurlea.GetString(4)
             });
         }
+
         return erreserbak;
     }
 
+
+    // Datu-basean gordetako kontsumo guztiak lortzen ditu.
     public List<Kontsumoak> LortuKontsumoak()
     {
         var kontsumoak = new List<Kontsumoak>();
+
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
-        komandoa.CommandText = "SELECT Id, ErabiltzaileIzena, Produktua, Kantitatea, PrezioTotala, DataUtc FROM Kontsumoak;";
+
+        komandoa.CommandText =
+            "SELECT Id, ErabiltzaileIzena, Produktua, Kantitatea, PrezioTotala, DataUtc FROM Kontsumoak;";
+
         using var irakurlea = komandoa.ExecuteReader();
+
         while (irakurlea.Read())
         {
             kontsumoak.Add(new Kontsumoak
@@ -186,26 +306,38 @@ public class DatuBasea
                 Prezioa = irakurlea.GetDouble(4)
             });
         }
+
         return kontsumoak;
     }
 
-    public void GordeStocka(string produktua, int kantitatea, double prezioa)
+
+    // Biltegian produktu berri bat gordetzen du.
+    public void GordeStocka(
+        string produktua,
+        int kantitatea,
+        double prezioa,
+        string kategoria = "")
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
+
         komandoa.CommandText = """
-            INSERT INTO Stocka (Produktua, Kantitatea, Prezioa)
-            VALUES ($produktua, $kantitatea, $prezioa);
+            INSERT INTO Stocka (Produktua, Kantitatea, Prezioa, Kategoria)
+            VALUES ($produktua, $kantitatea, $prezioa, $kategoria);
             """;
+
         komandoa.Parameters.AddWithValue("$produktua", produktua);
         komandoa.Parameters.AddWithValue("$kantitatea", kantitatea);
         komandoa.Parameters.AddWithValue("$prezioa", prezioa);
-        komandoa.ExecuteNonQuery();
+        komandoa.Parameters.AddWithValue("$kategoria", kategoria);
 
+        komandoa.ExecuteNonQuery();
     }
 
 
+    // Erreserba berri bat gordetzen du, aurretik mahai hori libre dagoela egiaztatuz.
     public void GordeErreserba(
         int mahaiZenbakia,
         string data,
@@ -219,27 +351,20 @@ public class DatuBasea
 
         try
         {
-            // Mahaia data eta zerbitzu horretan libre dagoen egiaztatzen du.
             using var egiaztatuKomandoa = konexioa.CreateCommand();
-
             egiaztatuKomandoa.Transaction = transakzioa;
 
             egiaztatuKomandoa.CommandText = """
-            SELECT COUNT(*)
-            FROM Erreserbak
-            WHERE MahaiZenbakia = $mahaia
-            AND Data = $data
-            AND BazkariaAfaria = $zerbitzua;
-            """;
+                SELECT COUNT(*)
+                FROM Erreserbak
+                WHERE MahaiZenbakia = $mahaia
+                AND Data = $data
+                AND BazkariaAfaria = $zerbitzua;
+                """;
 
-            egiaztatuKomandoa.Parameters.AddWithValue(
-                "$mahaia", mahaiZenbakia);
-
-            egiaztatuKomandoa.Parameters.AddWithValue(
-                "$data", data);
-
-            egiaztatuKomandoa.Parameters.AddWithValue(
-                "$zerbitzua", bazkariaAfaria);
+            egiaztatuKomandoa.Parameters.AddWithValue("$mahaia", mahaiZenbakia);
+            egiaztatuKomandoa.Parameters.AddWithValue("$data", data);
+            egiaztatuKomandoa.Parameters.AddWithValue("$zerbitzua", bazkariaAfaria);
 
             long erreserbak = (long)egiaztatuKomandoa.ExecuteScalar()!;
 
@@ -249,29 +374,20 @@ public class DatuBasea
                     "Mahai hau dagoeneko erreserbatuta dago data eta zerbitzu horretarako.");
             }
 
-            // Erreserba datu-basean gordetzen du.
             using var komandoa = konexioa.CreateCommand();
-
             komandoa.Transaction = transakzioa;
 
             komandoa.CommandText = """
-            INSERT INTO Erreserbak
-            (MahaiZenbakia, Data, BazkariaAfaria, ErabiltzaileIzena)
-            VALUES
-            ($mahaia, $data, $zerbitzua, $erabiltzailea);
-            """;
+                INSERT INTO Erreserbak
+                (MahaiZenbakia, Data, BazkariaAfaria, ErabiltzaileIzena)
+                VALUES
+                ($mahaia, $data, $zerbitzua, $erabiltzailea);
+                """;
 
-            komandoa.Parameters.AddWithValue(
-                "$mahaia", mahaiZenbakia);
-
-            komandoa.Parameters.AddWithValue(
-                "$data", data);
-
-            komandoa.Parameters.AddWithValue(
-                "$zerbitzua", bazkariaAfaria);
-
-            komandoa.Parameters.AddWithValue(
-                "$erabiltzailea", erabiltzaileIzena);
+            komandoa.Parameters.AddWithValue("$mahaia", mahaiZenbakia);
+            komandoa.Parameters.AddWithValue("$data", data);
+            komandoa.Parameters.AddWithValue("$zerbitzua", bazkariaAfaria);
+            komandoa.Parameters.AddWithValue("$erabiltzailea", erabiltzaileIzena);
 
             komandoa.ExecuteNonQuery();
 
@@ -285,53 +401,93 @@ public class DatuBasea
     }
 
 
-    public void GordeKontsumoa(string erabiltzaileIzena, string produktua, int kantitatea, double prezioa)
+    // Kontsumo bat datu-basean gordetzen du.
+    public void GordeKontsumoa(
+        string erabiltzaileIzena,
+        string produktua,
+        int kantitatea,
+        double prezioa)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
+
         komandoa.CommandText = """
             INSERT INTO Kontsumoak (ErabiltzaileIzena, Produktua, Kantitatea, PrezioTotala)
             VALUES ($erabiltzaileIzena, $produktua, $kantitatea, $prezioa);
             """;
+
         komandoa.Parameters.AddWithValue("$erabiltzaileIzena", erabiltzaileIzena);
         komandoa.Parameters.AddWithValue("$produktua", produktua);
         komandoa.Parameters.AddWithValue("$kantitatea", kantitatea);
         komandoa.Parameters.AddWithValue("$prezioa", prezioa);
+
         komandoa.ExecuteNonQuery();
     }
 
+
+    // Id bidez erabiltzaile bat datu-basetik ezabatzen du.
     public void EzabatuErabiltzailea(long id)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
         komandoa.CommandText = "DELETE FROM Erabiltzaileak WHERE Id = $id;";
+
         komandoa.Parameters.AddWithValue("$id", id);
+
         komandoa.ExecuteNonQuery();
     }
 
+
+    // Id bidez produktu bat biltegitik ezabatzen du.
     public void EzabatuStocka(long id)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
         komandoa.CommandText = "DELETE FROM Stocka WHERE Id = $id;";
+
         komandoa.Parameters.AddWithValue("$id", id);
+
         komandoa.ExecuteNonQuery();
     }
 
-    public void EzabatuErreserba(long id)
+
+    // Id bidez erreserba bat datu-basetik ezabatzen du.
+
+    // Erreserba bat ezabatzen du, erabiltzailea jabea dela egiaztatuz.
+    public void EzabatuErreserba(long id, string erabiltzaileIzena)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
+
         using var komandoa = konexioa.CreateCommand();
-        komandoa.CommandText = "DELETE FROM Erreserbak WHERE Id = $id;";
+
+        komandoa.CommandText = """
+        DELETE FROM Erreserbak
+        WHERE Id = $id
+        AND ErabiltzaileIzena = $erabiltzailea;
+        """;
+
         komandoa.Parameters.AddWithValue("$id", id);
-        komandoa.ExecuteNonQuery();
+        komandoa.Parameters.AddWithValue("$erabiltzailea", erabiltzaileIzena);
+
+        int ezabatutakoErrenkadak = komandoa.ExecuteNonQuery();
+
+        if (ezabatutakoErrenkadak == 0)
+        {
+            throw new InvalidOperationException(
+                "Ezin duzu beste erabiltzaile baten erreserba ezabatu.");
+        }
     }
 
 
+
+    // Erabiltzailearen izena eta pasahitza egiaztatzen ditu saioa hasteko.
     public Erabiltzaileak? EgiaztatuLogin(string izena, string pasahitza)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
@@ -340,11 +496,11 @@ public class DatuBasea
         using var komandoa = konexioa.CreateCommand();
 
         komandoa.CommandText = """
-        SELECT Id, ErabiltzaileIzena, Pasahitza, Mota
-        FROM Erabiltzaileak
-        WHERE ErabiltzaileIzena = $izena
-        AND Pasahitza = $pasahitza;
-        """;
+            SELECT Id, ErabiltzaileIzena, Pasahitza, Mota
+            FROM Erabiltzaileak
+            WHERE ErabiltzaileIzena = $izena
+            AND Pasahitza = $pasahitza;
+            """;
 
         komandoa.Parameters.AddWithValue("$izena", izena);
         komandoa.Parameters.AddWithValue("$pasahitza", pasahitza);
@@ -365,7 +521,13 @@ public class DatuBasea
         return null;
     }
 
-    public void EguneratuErabiltzailea(long id, string izena, string pasahitza, string mota)
+
+    // Dagoen erabiltzaile baten datuak eguneratzen ditu.
+    public void EguneratuErabiltzailea(
+        long id,
+        string izena,
+        string pasahitza,
+        string mota)
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
@@ -373,12 +535,12 @@ public class DatuBasea
         using var komandoa = konexioa.CreateCommand();
 
         komandoa.CommandText = """
-        UPDATE Erabiltzaileak
-        SET ErabiltzaileIzena = $izena,
-            Pasahitza = $pasahitza,
-            Mota = $mota
-        WHERE Id = $id;
-        """;
+            UPDATE Erabiltzaileak
+            SET ErabiltzaileIzena = $izena,
+                Pasahitza = $pasahitza,
+                Mota = $mota
+            WHERE Id = $id;
+            """;
 
         komandoa.Parameters.AddWithValue("$id", id);
         komandoa.Parameters.AddWithValue("$izena", izena);
@@ -389,7 +551,13 @@ public class DatuBasea
     }
 
 
-    public void EguneratuStocka(long id, string produktua, int kantitatea, double prezioa)
+    // Biltegian dagoen produktu baten datuak eguneratzen ditu.
+    public void EguneratuStocka(
+        long id,
+        string produktua,
+        int kantitatea,
+        double prezioa,
+        string kategoria = "")
     {
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
@@ -397,23 +565,25 @@ public class DatuBasea
         using var komandoa = konexioa.CreateCommand();
 
         komandoa.CommandText = """
-        UPDATE Stocka
-        SET Produktua = $produktua,
-            Kantitatea = $kantitatea,
-            Prezioa = $prezioa
-        WHERE Id = $id;
-        """;
+            UPDATE Stocka
+            SET Produktua = $produktua,
+                Kantitatea = $kantitatea,
+                Prezioa = $prezioa,
+                Kategoria = $kategoria
+            WHERE Id = $id;
+            """;
 
         komandoa.Parameters.AddWithValue("$id", id);
         komandoa.Parameters.AddWithValue("$produktua", produktua);
         komandoa.Parameters.AddWithValue("$kantitatea", kantitatea);
         komandoa.Parameters.AddWithValue("$prezioa", prezioa);
+        komandoa.Parameters.AddWithValue("$kategoria", kategoria);
 
         komandoa.ExecuteNonQuery();
     }
 
 
-    // Kontsumoa gorde eta stockeko kantitateak eguneratzen ditu.
+    // Kontsumoa datu-basean gordetzen du eta biltegiko stocka eguneratzen du.
     public void GordeKontsumoaEtaEguneratuStocka(
         string erabiltzaileIzena,
         IEnumerable<KontsumoLerroa> kontsumoak)
@@ -421,7 +591,6 @@ public class DatuBasea
         using var konexioa = new SqliteConnection(KonexioKatea);
         konexioa.Open();
 
-        // Eragiketa guztiak batera egiten dira.
         using var transakzioa = konexioa.BeginTransaction();
 
         try
@@ -434,9 +603,7 @@ public class DatuBasea
                         "Produktu baten kantitatea ez da zuzena.");
                 }
 
-                // Stockean nahikoa produktu dagoen egiaztatzen du.
                 using var stockKomandoa = konexioa.CreateCommand();
-
                 stockKomandoa.Transaction = transakzioa;
 
                 stockKomandoa.CommandText = """
@@ -462,9 +629,7 @@ public class DatuBasea
                         lerroa.Produktua);
                 }
 
-                // Kontsumoa datu-basean gordetzen du.
                 using var kontsumoKomandoa = konexioa.CreateCommand();
-
                 kontsumoKomandoa.Transaction = transakzioa;
 
                 kontsumoKomandoa.CommandText = """
@@ -489,14 +654,11 @@ public class DatuBasea
                 kontsumoKomandoa.ExecuteNonQuery();
             }
 
-            // Dena ondo badago, aldaketak gordetzen dira.
             transakzioa.Commit();
         }
         catch
         {
-            // Errore bat badago, aldaketa guztiak desegiten dira.
             transakzioa.Rollback();
-
             throw;
         }
     }

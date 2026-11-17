@@ -36,6 +36,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Margin="5">
@@ -59,7 +60,20 @@
                     <TextBox
                         x:Name="txtPrezioa"
                         Height="32"
-                        Margin="0,5,0,0" />
+                        Margin="0,5,10,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Margin="5">
+                    <TextBlock Text="Kategoria" />
+                    <ComboBox
+                        x:Name="cmbKategoria"
+                        Height="32"
+                        Margin="0,5,0,0"
+                        SelectedIndex="0">
+                        <ComboBoxItem Content="Edariak" />
+                        <ComboBoxItem Content="Kafeak" />
+                        <ComboBoxItem Content="Janaria" />
+                    </ComboBox>
                 </StackPanel>
             </Grid>
         </Border>
@@ -76,7 +90,7 @@
 
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="70"
+                    Width="60"
                     Binding="{Binding Id}"
                     Header="ID" />
 
@@ -90,10 +104,16 @@
                     Binding="{Binding Kantitatea}"
                     Header="Kantitatea" />
 
+
                 <DataGridTextColumn
                     Width="*"
-                    Binding="{Binding Prezioa, StringFormat=N2}"
+                    Binding="{Binding Prezioa, StringFormat={}{0:0.00}, ConverterCulture=es-ES}"
                     Header="Prezioa (€)" />
+
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Kategoria}"
+                    Header="Kategoria" />
             </DataGrid.Columns>
         </DataGrid>
 

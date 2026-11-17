@@ -403,51 +403,59 @@ namespace Elkartea_TPV
         }
 
         // Aukeratutako erreserba datu-basetik ezabatzen du.
-        private void BtnErreserbaEzabatu_Click(
-            object sender,
-            RoutedEventArgs e)
+        private void BtnErreserbaEzabatu_Click(object sender, RoutedEventArgs e)
         {
             if (dgvErreserbak.SelectedItem is not Erreserbak erreserba)
             {
                 MessageBox.Show(
-                    "Lehenengo ezabatu nahi duzun erreserba aukeratu.",
-                    "Erreserbak",
+                    "Mesedez, aukeratu ezabatu nahi duzun erreserba.",
+                    "Oharra",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
 
                 return;
             }
 
-            MessageBoxResult erantzuna = MessageBox.Show(
+            // Erabiltzaileak bere erreserbak bakarrik ezabatu ditzake.
+            if (erreserba.ErabiltzaileIzena != _erabiltzailea.ErabiltzaileIzena)
+            {
+                MessageBox.Show(
+                    "Ezin dituzu beste erabiltzaile baten erreserbak ezabatu.",
+                    "Baimenik ez",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            MessageBoxResult emaitza = MessageBox.Show(
                 "Ziur zaude erreserba hau ezabatu nahi duzula?",
                 "Erreserba ezabatu",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
-            if (erantzuna != MessageBoxResult.Yes)
+            if (emaitza == MessageBoxResult.Yes)
             {
-                return;
-            }
+                try
+                {
+                    _datuBasea.EzabatuErreserba(erreserba.Id,_erabiltzailea.ErabiltzaileIzena);
 
-            try
-            {
-                _datuBasea.EzabatuErreserba(erreserba.Id);
+                    MessageBox.Show(
+                        "Erreserba behar bezala ezabatu da.",
+                        "Baieztapena",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
 
-                MessageBox.Show(
-                    "Erreserba behar bezala ezabatu da.",
-                    "Erreserba ezabatuta",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
-                FreskatuErreserbak();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "Errorea erreserba ezabatzean:\n" + ex.Message,
-                    "Errorea",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    FreskatuErreserbak();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "Errorea erreserba ezabatzean: " + ex.Message,
+                        "Errorea",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             }
         }
 

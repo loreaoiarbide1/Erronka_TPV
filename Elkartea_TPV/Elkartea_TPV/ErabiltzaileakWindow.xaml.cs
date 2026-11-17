@@ -94,7 +94,7 @@ namespace Elkartea_TPV
 
                 txtIzena.Text   = erabiltzailea.ErabiltzaileIzena;
 
-                // Pasahitza ez dugu zerrendan erakusten.
+                // Pasahitza ez da erakusten.
                 // Aldatzeko, pasahitz berria idatzi behar da.
                 txtPasahitza.Clear();
 

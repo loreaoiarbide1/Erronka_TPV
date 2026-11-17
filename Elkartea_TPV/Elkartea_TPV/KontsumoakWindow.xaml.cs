@@ -51,10 +51,12 @@ namespace Elkartea_TPV
 
             foreach (Stocka produktua in _produktuak)
             {
-                string produktuKategoria = LortuKategoria(produktua.Produktua);
-
+                // Produktuaren datu-basean gordetako kategoria erabiltzen du.
                 if (kategoria != "Denak" &&
-                    produktuKategoria != kategoria)
+                    !string.Equals(
+                        produktua.Kategoria?.Trim(),
+                        kategoria,
+                        StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -90,31 +92,37 @@ namespace Elkartea_TPV
                 if (!string.IsNullOrWhiteSpace(fitxategia) &&
                     File.Exists(irudiBidea))
                 {
-                    Image argazkia = new Image
+                    try
                     {
-                        Source = new BitmapImage(
-                            new Uri(irudiBidea, UriKind.Absolute)),
-                        Width = 90,
-                        Height = 85,
-                        Stretch = Stretch.Uniform,
-                        Margin = new Thickness(5)
-                    };
+                        BitmapImage bitmap = new BitmapImage();
 
-                    edukia.Children.Add(argazkia);
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(
+                            irudiBidea,
+                            UriKind.Absolute);
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+
+                        Image argazkia = new Image
+                        {
+                            Source = bitmap,
+                            Width = 90,
+                            Height = 85,
+                            Stretch = Stretch.Uniform,
+                            Margin = new Thickness(5)
+                        };
+
+                        edukia.Children.Add(argazkia);
+                    }
+                    catch
+                    {
+                        GehituIrudirikEz(edukia);
+                    }
                 }
                 else
                 {
-                    TextBlock irudirikEz = new TextBlock
-                    {
-                        Text = "Irudirik ez",
-                        FontSize = 12,
-                        Foreground = Brushes.Gray,
-                        Height = 85,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        TextAlignment = TextAlignment.Center
-                    };
-
-                    edukia.Children.Add(irudirikEz);
+                    GehituIrudirikEz(edukia);
                 }
 
                 TextBlock izena = new TextBlock
@@ -147,82 +155,36 @@ namespace Elkartea_TPV
             }
         }
 
-        // Produktu bakoitzari dagokion kategoria itzultzen du.
-        private string LortuKategoria(string produktua)
+        // Argazkirik ez dagoenean mezua erakusten du.
+        private void GehituIrudirikEz(StackPanel edukia)
         {
-            string izena = produktua.Trim().ToLowerInvariant();
-
-            // Edariak
-            if (izena == "coca-cola" ||
-                izena == "kas_naranja" ||
-                izena == "garagardoa" ||
-                izena == "ura")
+            TextBlock irudirikEz = new TextBlock
             {
-                return "Edariak";
-            }
+                Text = "Irudirik ez",
+                FontSize = 12,
+                Foreground = Brushes.Gray,
+                Height = 85,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextAlignment = TextAlignment.Center
+            };
 
-            // Kafeak
-            if (izena == "ebakia" ||
-                izena == "kafe_deskafeinatua" ||
-                izena == "kafe_hutsa" ||
-                izena == "kafesnia")
-            {
-                return "Kafeak";
-            }
-
-            return "Janaria";
+            edukia.Children.Add(irudirikEz);
         }
 
-        // Produktuaren izenaren arabera dagokion irudia itzultzen du.
+        // Produktuaren izenaren arabera irudiaren fitxategi-izena sortzen du.
         private string LortuIrudia(string produktua)
         {
-            switch (produktua.Trim().ToLowerInvariant())
+            if (string.IsNullOrWhiteSpace(produktua))
             {
-                // Edariak
-                case "coca-cola":
-                    return "coca-cola.png";
-
-                case "garagardoa":
-                    return "garagardoa.png";
-
-                case "kas_naranja":
-                    return "kas_naranja.png";
-
-                case "ura":
-                    return "ura.png";
-
-                // Kafeak
-                case "ebakia":
-                    return "ebakia.png";
-
-                case "kafe_deskafeinatua":
-                    return "kafe_deskafeinatua.png";
-
-                case "kafe_hutsa":
-                    return "kafe_hutsa.png";
-
-                case "kafesnia":
-                    return "kafesnia.png";
-
-                // Janaria
-                case "gildak":
-                    return "gildak.png";
-
-                case "kroketak":
-                    return "kroketak.png";
-
-                case "patatak":
-                    return "patatak.png";
-
-                case "rabak":
-                    return "rabak.png";
-
-                case "azeitunak":
-                    return "azeitunak.png";
-
-                default:
-                    return "";
+                return "";
             }
+
+            string izena = produktua.Trim().ToLowerInvariant();
+
+            // Hutsuneak azpimarra bihurtzen ditu.
+            izena = izena.Replace(" ", "_");
+
+            return izena + ".png";
         }
 
         // Aukeratutako kategoriako produktuak erakusten ditu.
@@ -706,7 +668,6 @@ namespace Elkartea_TPV
             }
         }
 
-
         // Menu nagusira itzultzen da.
         private void BtnAtzera_Click(object sender, RoutedEventArgs e)
         {
@@ -740,6 +701,5 @@ namespace Elkartea_TPV
 
             this.Close();
         }
-
     }
 }

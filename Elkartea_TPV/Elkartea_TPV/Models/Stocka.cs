@@ -9,8 +9,13 @@ namespace Elkartea_TPV.Models
     public class Stocka
     {
         public long Id { get; set; }
+
         public string Produktua { get; set; } = "";
+
         public int Kantitatea { get; set; }
+
         public double Prezioa { get; set; }
+    
+        public string Kategoria { get; set; } = "";
     }
 }
