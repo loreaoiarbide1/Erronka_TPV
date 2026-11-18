@@ -27,8 +27,7 @@ namespace Elkartea_TPV
                 return;
             }
 
-            var erabiltzailea =
-                _datuBasea.EgiaztatuLogin(izena, pasahitza);
+            var erabiltzailea = _datuBasea.EgiaztatuLogin(izena, pasahitza);
 
             if (erabiltzailea == null)
             {

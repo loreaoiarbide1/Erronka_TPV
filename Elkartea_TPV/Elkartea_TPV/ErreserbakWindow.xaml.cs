@@ -42,6 +42,7 @@ namespace Elkartea_TPV
 
             // Hasierako data eta zerbitzua aukeratzen ditu.
             dpData.SelectedDate = DateTime.Today;
+            dpData.DisplayDateStart = DateTime.Today;
             cmbZerbitzua.SelectedIndex = 0;
 
             dgvErreserbak.ItemsSource = _erreserbak;
@@ -340,6 +341,18 @@ namespace Elkartea_TPV
                 MessageBox.Show(
                     "Aukeratu erreserbaren data.",
                     "Erreserbak",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            // Iraganeko datetan ezin da erreserbarik egin.
+            if (dpData.SelectedDate.Value.Date < DateTime.Today)
+            {
+                MessageBox.Show(
+                    "Ezin da iraganeko data bateko erreserbarik egin.",
+                    "Data okerra",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
 
