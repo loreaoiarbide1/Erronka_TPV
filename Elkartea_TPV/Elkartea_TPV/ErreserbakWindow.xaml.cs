@@ -42,7 +42,7 @@ namespace Elkartea_TPV
 
             // Hasierako data eta zerbitzua aukeratzen ditu.
             dpData.SelectedDate = DateTime.Today;
-            dpData.DisplayDateStart = DateTime.Today;
+            //dpData.DisplayDateStart = DateTime.Today;
             cmbZerbitzua.SelectedIndex = 0;
 
             dgvErreserbak.ItemsSource = _erreserbak;
